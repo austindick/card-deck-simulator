@@ -41,7 +41,7 @@ class WebSocketService {
     console.log('Connecting to Socket.IO server at:', socketUrl);
     
     this.socket = io(socketUrl, {
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,
