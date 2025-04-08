@@ -44,13 +44,15 @@ class WebSocketService {
     const isProduction = window.location.hostname.includes('vercel.app');
     
     this.socket = io(socketUrl, {
-      transports: isProduction ? ['polling'] : ['polling', 'websocket'],
+      transports: ['polling'],
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
-      forceNew: true // Force a new connection each time
+      forceNew: true, // Force a new connection each time
+      path: '/socket.io/',
+      withCredentials: false
     });
 
     this.socket.on('connect', () => {
