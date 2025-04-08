@@ -33,11 +33,8 @@ class WebSocketService {
       // In development, connect to localhost
       socketUrl = 'http://localhost:3001';
     } else {
-      // In production, use the same host as the current page
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.hostname;
-      const port = '3001'; // Always use port 3001 for the WebSocket server
-      socketUrl = `${protocol}//${host}:${port}`;
+      // In production, connect to the Railway server
+      socketUrl = 'https://card-deck-simulator-server-production.up.railway.app';
     }
     
     console.log('Connecting to Socket.IO server at:', socketUrl);
