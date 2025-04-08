@@ -29,7 +29,10 @@ class WebSocketService {
     // Determine the WebSocket server URL based on the environment
     let socketUrl;
     
-    if (process.env.NODE_ENV === 'development') {
+    // Check if we're in development mode
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (isDevelopment) {
       // In development, connect to localhost
       socketUrl = 'http://localhost:3001';
     } else {
