@@ -40,8 +40,11 @@ class WebSocketService {
     
     console.log('Connecting to Socket.IO server at:', socketUrl);
     
+    // Determine transport method based on environment
+    const isProduction = window.location.hostname.includes('vercel.app');
+    
     this.socket = io(socketUrl, {
-      transports: ['polling', 'websocket'],
+      transports: isProduction ? ['polling'] : ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,
