@@ -29,15 +29,13 @@ class WebSocketService {
     // Determine the WebSocket server URL based on the environment
     let socketUrl;
     
-    // Check if we're in development mode
-    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
-    if (isDevelopment) {
+    // Hardcode the URL for production
+    if (window.location.hostname.includes('vercel.app')) {
+      // In production (Vercel), connect to Railway
+      socketUrl = 'https://card-deck-simulator-server-production.up.railway.app';
+    } else {
       // In development, connect to localhost
       socketUrl = 'http://localhost:3001';
-    } else {
-      // In production, connect to the Railway server
-      socketUrl = 'https://card-deck-simulator-server-production.up.railway.app';
     }
     
     console.log('Connecting to Socket.IO server at:', socketUrl);
