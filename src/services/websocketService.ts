@@ -5,10 +5,12 @@ import { Card } from '../types/Card';
 
 // Use environment variable for WebSocket URL in production
 const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.REACT_APP_WEBSOCKET_URL || window.location.origin
+  ? 'https://card-deck-simulator-server-production.up.railway.app'
   : 'http://localhost:3001';
 
-console.log('WebSocket URL:', SOCKET_URL); // Debug log
+console.log('Environment:', process.env.NODE_ENV);
+console.log('WebSocket URL:', SOCKET_URL);
+console.log('REACT_APP_WEBSOCKET_URL:', process.env.REACT_APP_WEBSOCKET_URL);
 
 type MessageHandler = (data: any) => void;
 type ConnectionHandler = (count: number) => void;
@@ -23,7 +25,15 @@ class WebSocketService {
   connect() {
     if (this.socket?.connected) return;
 
-    this.socket = io(SOCKET_URL);
+    console.log('Connecting to Socket.IO server at:', SOCKET_URL);
+    this.socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
 
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
@@ -39,6 +49,10 @@ class WebSocketService {
 
     this.socket.on('error', (error) => {
       console.error('WebSocket error:', error);
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket.IO connection error:', error);
     });
 
     this.socket.on('stateUpdate', (data: GameState) => {
