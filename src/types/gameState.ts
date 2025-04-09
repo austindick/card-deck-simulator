@@ -7,6 +7,6 @@ export interface GameState {
   peekedCards: Card[];
   lastAction: {
     type: string;
-    data?: any;
+    card?: Card;
   };
 } 

@@ -11,128 +11,161 @@ console.log('Environment:', process.env.NODE_ENV);
 console.log('WebSocket URL:', SOCKET_URL);
 console.log('REACT_APP_WEBSOCKET_URL:', process.env.REACT_APP_WEBSOCKET_URL);
 
-type MessageHandler = (data: any) => void;
-type ConnectionHandler = (count: number) => void;
-
 class WebSocketService {
   private socket: Socket | null = null;
-  private messageHandlers: Set<MessageHandler> = new Set();
-  private connectionHandlers: Set<ConnectionHandler> = new Set();
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private subscribers: Map<string, Set<(data: any) => void>> = new Map();
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 1000;
   private pingInterval: NodeJS.Timeout | null = null;
+  private connectionCheckInterval: NodeJS.Timeout | null = null;
 
-  connect() {
-    if (this.socket?.connected) return;
+  constructor() {
+    this.setupSocket();
+  }
 
-    console.log('Connecting to Socket.IO server at:', SOCKET_URL);
-    
-    // Create a new Socket.IO instance with explicit URL
-    const url = new URL(SOCKET_URL);
-    const socketOptions = {
-      transports: ['websocket'],
-      path: '/socket.io',
+  private setupSocket() {
+    const wsUrl = process.env.REACT_APP_WS_URL || 'http://localhost:3001';
+    console.log('Connecting to WebSocket server at:', wsUrl);
+
+    this.socket = io(wsUrl, {
+      transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionDelay: this.reconnectDelay,
       timeout: 20000,
-      forceNew: true,
       autoConnect: true,
-      withCredentials: true,
-      // Explicitly set the host and port
-      hostname: url.hostname,
-      port: url.port || (url.protocol === 'https:' ? '443' : '80'),
-      secure: url.protocol === 'https:',
-      // Disable polling to force WebSocket
-      upgrade: false
-    };
-    
-    console.log('Socket.IO options:', socketOptions);
-    
-    // Create the socket with explicit URL
-    this.socket = io(url.origin, socketOptions);
+      forceNew: true
+    });
 
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
+      this.reconnectAttempts = 0;
       this.startPingInterval();
-      this.socket?.emit('requestConnectionCount');
+      this.startConnectionCheck();
+      this.requestConnectionCount();
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
-      this.stopPingInterval();
-      this.scheduleReconnect();
-    });
-
-    this.socket.on('error', (error) => {
-      console.error('WebSocket error:', error);
+    this.socket.on('disconnect', (reason) => {
+      console.log('Disconnected from WebSocket server:', reason);
+      this.cleanup();
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Socket.IO connection error:', error);
+      console.error('Connection error:', error);
+      this.reconnectAttempts++;
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.error('Max reconnection attempts reached');
+        this.cleanup();
+      }
     });
 
-    this.socket.on('stateUpdate', (data: GameState) => {
-      this.messageHandlers.forEach(handler => handler(data));
+    this.socket.on('error', (error) => {
+      console.error('Socket error:', error);
+    });
+
+    this.socket.on('stateUpdate', (state: GameState) => {
+      this.notifySubscribers('stateUpdate', state);
     });
 
     this.socket.on('connectionUpdate', (data: { connections: number }) => {
-      console.log('Connection update:', data);
-      this.connectionHandlers.forEach(handler => handler(Math.max(1, data.connections)));
+      this.notifySubscribers('connectionUpdate', data);
+    });
+
+    this.socket.on('pong', () => {
+      console.log('Received pong from server');
+    });
+
+    this.socket.on('error', (error: { message: string }) => {
+      console.error('Server error:', error);
+      this.notifySubscribers('error', error);
     });
   }
 
-  disconnect() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-    this.stopPingInterval();
-    this.socket?.disconnect();
-    this.socket = null;
-  }
-
-  private scheduleReconnect() {
-    if (this.reconnectTimeout) return;
-    this.reconnectTimeout = setTimeout(() => {
-      console.log('Attempting to reconnect...');
-      this.connect();
-      this.reconnectTimeout = null;
-    }, 5000);
-  }
-
   private startPingInterval() {
-    this.stopPingInterval();
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
     this.pingInterval = setInterval(() => {
-      this.socket?.emit('ping');
+      if (this.socket?.connected) {
+        this.socket.emit('ping');
+      }
     }, 15000);
   }
 
-  private stopPingInterval() {
+  private startConnectionCheck() {
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval);
+    }
+    this.connectionCheckInterval = setInterval(() => {
+      if (this.socket?.connected) {
+        this.requestConnectionCount();
+      }
+    }, 5000);
+  }
+
+  private cleanup() {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
     }
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval);
+      this.connectionCheckInterval = null;
+    }
   }
 
-  subscribeToMessages(handler: MessageHandler) {
-    this.messageHandlers.add(handler);
-    return () => this.messageHandlers.delete(handler);
-  }
-
-  subscribeToConnections(handler: ConnectionHandler) {
-    this.connectionHandlers.add(handler);
-    this.socket?.emit('requestConnectionCount');
-    return () => this.connectionHandlers.delete(handler);
-  }
-
-  sendMessage(type: string, data?: any) {
+  public connect() {
     if (!this.socket?.connected) {
-      console.warn('Socket not connected, attempting to connect...');
-      this.connect();
+      this.setupSocket();
+    }
+  }
+
+  public disconnect() {
+    this.cleanup();
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  }
+
+  public subscribe(event: string, callback: (data: any) => void) {
+    if (!this.subscribers.has(event)) {
+      this.subscribers.set(event, new Set());
+    }
+    this.subscribers.get(event)?.add(callback);
+    return () => {
+      this.subscribers.get(event)?.delete(callback);
+    };
+  }
+
+  private notifySubscribers(event: string, data: any) {
+    this.subscribers.get(event)?.forEach(callback => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error('Error in subscriber callback:', error);
+      }
+    });
+  }
+
+  public send(type: string, payload?: any) {
+    if (!this.socket?.connected) {
+      console.error('Not connected to WebSocket server');
       return;
     }
-    this.socket.emit('message', { type, data });
+
+    try {
+      this.socket.emit('message', { type, payload });
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  }
+
+  public requestConnectionCount() {
+    if (this.socket?.connected) {
+      this.socket.emit('requestConnectionCount');
+    }
   }
 }
 
