@@ -150,6 +150,18 @@ class SocketService {
       }
     });
   }
+
+  disconnect() {
+    this.stopPingInterval();
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  }
 }
 
 export const socketService = new SocketService(); 
