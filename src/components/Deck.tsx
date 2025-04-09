@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { websocketService } from '../services/websocketService';
 import { GameState } from '../types/gameState';
-import { Card } from '../types/Card';
 
 export const Deck: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
