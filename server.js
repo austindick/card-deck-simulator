@@ -5,17 +5,47 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
+
+// Configure CORS with specific origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://card-deck-simulator.vercel.app',
+  /\.vercel\.app$/  // Allow all subdomains of vercel.app
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.some(allowed => {
+        if (allowed instanceof RegExp) {
+          return allowed.test(origin);
+        }
+        return allowed === origin;
+      })) {
+        callback(null, true);
+      } else {
+        console.log('Blocked request from origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true
   },
   pingTimeout: 60000,
   pingInterval: 25000,
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
   allowEIO3: true,
   cleanupEmptyChildNamespaces: true,
   connectTimeout: 45000
+});
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 // Serve static files from the React app

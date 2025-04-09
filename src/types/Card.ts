@@ -2,8 +2,8 @@ export interface Card {
   id: string;
   name: string;
   description: string;
-  imageUrl?: string;
-  attributes?: Record<string, string | number>;
+  imageUrl: string;
+  attributes: Record<string, string>;
 }
 
 export interface Deck {

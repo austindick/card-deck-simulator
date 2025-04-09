@@ -5,6 +5,7 @@ import { Card } from './Card';
 import { SheetsService } from '../services/sheetsService';
 import { websocketService } from '../services/websocketService';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { GameState } from '../types/gameState';
 
 export const Deck: React.FC = () => {
   const [cards, setCards] = useState<CardType[]>([]);
@@ -40,7 +41,7 @@ export const Deck: React.FC = () => {
   }, [sheetsService]);
 
   useEffect(() => {
-    const unsubscribe = websocketService.subscribe((state) => {
+    const unsubscribe = websocketService.subscribeToMessages((state: GameState) => {
       setCards(state.cards);
       setDrawnCards(state.drawnCards);
       setDiscardPile(state.discardPile);
