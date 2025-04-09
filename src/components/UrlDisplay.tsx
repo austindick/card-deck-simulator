@@ -1,49 +1,37 @@
-import React, { useState } from 'react';
-import { Box, Typography, Button, Snackbar } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Paper, Typography, Box, IconButton, Snackbar } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 const UrlDisplay: React.FC = () => {
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const ngrokUrl = 'https://3cfa-2607-fea8-1ea9-f400-7434-925b-6504-b0e2.ngrok-free.app';
+  const [url, setUrl] = useState('');
+  const [showCopied, setShowCopied] = useState(false);
 
-  const handleCopyClick = () => {
-    navigator.clipboard.writeText(ngrokUrl);
-    setOpenSnackbar(true);
-  };
+  useEffect(() => {
+    setUrl(window.location.href);
+  }, []);
 
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url);
+    setShowCopied(true);
   };
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: 2, 
-      p: 2, 
-      bgcolor: 'background.paper',
-      borderRadius: 1,
-      boxShadow: 1,
-      mb: 2
-    }}>
-      <Typography variant="body1" sx={{ flexGrow: 1 }}>
-        Share URL: {ngrokUrl}
-      </Typography>
-      <Button
-        variant="contained"
-        startIcon={<ContentCopyIcon />}
-        onClick={handleCopyClick}
-        size="small"
-      >
-        Copy
-      </Button>
+    <Paper elevation={3} sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
+          {url}
+        </Typography>
+        <IconButton onClick={handleCopy} color="primary">
+          <ContentCopyIcon />
+        </IconButton>
+      </Box>
       <Snackbar
-        open={openSnackbar}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
+        open={showCopied}
+        autoHideDuration={2000}
+        onClose={() => setShowCopied(false)}
         message="URL copied to clipboard!"
       />
-    </Box>
+    </Paper>
   );
 };
 

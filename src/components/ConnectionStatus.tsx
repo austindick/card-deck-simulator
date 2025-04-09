@@ -1,54 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Chip, Stack } from '@mui/material';
-import { Person } from '@mui/icons-material';
-import { useWebSocket } from '../services/websocket';
+import React from 'react';
+import { Paper, Typography, Box } from '@mui/material';
+import PeopleIcon from '@mui/icons-material/People';
 
-const ConnectionStatus: React.FC = () => {
-  const [activeConnections, setActiveConnections] = useState<number>(0);
-  const { socket } = useWebSocket();
+interface ConnectionStatusProps {
+  connectionCount: number;
+}
 
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleConnectionUpdate = (data: { connections: number }) => {
-      setActiveConnections(data.connections);
-    };
-
-    // Listen for connection updates
-    socket.on('connectionUpdate', handleConnectionUpdate);
-
-    // Request initial connection count
-    socket.emit('getConnectionCount');
-
-    // Cleanup function
-    return () => {
-      socket.off('connectionUpdate', handleConnectionUpdate);
-    };
-  }, [socket]);
-
+const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ connectionCount }) => {
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: 2, 
-      p: 2, 
-      bgcolor: 'background.paper',
-      borderRadius: 1,
-      boxShadow: 1,
-      mb: 2
-    }}>
-      <Stack direction="row" spacing={2} alignItems="center">
+    <Paper elevation={3} sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <PeopleIcon color="primary" />
         <Typography variant="body1">
-          Active Connections:
+          {connectionCount} {connectionCount === 1 ? 'user' : 'users'} connected
         </Typography>
-        <Chip
-          icon={<Person />}
-          label={`${activeConnections} ${activeConnections === 1 ? 'user' : 'users'}`}
-          color={activeConnections > 1 ? "success" : "default"}
-          variant="outlined"
-        />
-      </Stack>
-    </Box>
+      </Box>
+    </Paper>
   );
 };
 

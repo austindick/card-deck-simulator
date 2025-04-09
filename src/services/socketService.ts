@@ -21,7 +21,7 @@ class SocketService {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private pingInterval: NodeJS.Timeout | null = null;
 
-  private getWebSocketUrl(): string {
+  private getSocketUrl(): string {
     if (process.env.NODE_ENV === 'production') {
       return 'https://card-deck-simulator-server-production.up.railway.app';
     }
@@ -30,28 +30,29 @@ class SocketService {
 
   connect() {
     if (this.socket?.connected) {
-      console.log('Already connected to WebSocket server');
+      console.log('Already connected to Socket.io server');
       return;
     }
 
-    const wsUrl = this.getWebSocketUrl();
-    console.log('Connecting to WebSocket server at:', wsUrl);
+    const socketUrl = this.getSocketUrl();
+    console.log('Connecting to Socket.io server at:', socketUrl);
 
-    this.socket = io(wsUrl, {
+    this.socket = io(socketUrl, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      path: '/socket.io/',
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to WebSocket server');
+      console.log('Connected to Socket.io server');
       this.startPingInterval();
       this.socket?.emit('getConnectionCount');
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
+      console.log('Disconnected from Socket.io server');
       this.stopPingInterval();
       this.scheduleReconnect();
     });
