@@ -1,7 +1,6 @@
 // TypeScript type imports
 import { io, Socket } from 'socket.io-client';
 import { GameState } from '../types/gameState';
-import { Card } from '../types/Card';
 
 // Use environment variable for WebSocket URL in production
 const SOCKET_URL = process.env.NODE_ENV === 'production' 
