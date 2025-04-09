@@ -25,14 +25,29 @@ class WebSocketService {
     if (this.socket?.connected) return;
 
     console.log('Connecting to Socket.IO server at:', SOCKET_URL);
+    
+    // Force Socket.IO to use the correct URL and transport method
     this.socket = io(SOCKET_URL, {
       transports: ['websocket'],
+      path: '/socket.io',
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
+      forceNew: true,
+      autoConnect: true,
+      withCredentials: true
     });
+
+    // Override the transport URL to ensure it uses the correct host
+    if (this.socket.io) {
+      this.socket.io.opts.transports = ['websocket'];
+      this.socket.io.opts.path = '/socket.io';
+      this.socket.io.opts.hostname = new URL(SOCKET_URL).hostname;
+      this.socket.io.opts.port = new URL(SOCKET_URL).port || (new URL(SOCKET_URL).protocol === 'https:' ? '443' : '80');
+      this.socket.io.opts.secure = new URL(SOCKET_URL).protocol === 'https:';
+    }
 
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
