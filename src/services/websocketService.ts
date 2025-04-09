@@ -26,8 +26,9 @@ class WebSocketService {
 
     console.log('Connecting to Socket.IO server at:', SOCKET_URL);
     
-    // Force Socket.IO to use the correct URL and transport method
-    this.socket = io(SOCKET_URL, {
+    // Create a new Socket.IO instance with explicit URL
+    const url = new URL(SOCKET_URL);
+    const socketOptions = {
       transports: ['websocket'],
       path: '/socket.io',
       reconnection: true,
@@ -37,17 +38,19 @@ class WebSocketService {
       timeout: 20000,
       forceNew: true,
       autoConnect: true,
-      withCredentials: true
-    });
-
-    // Override the transport URL to ensure it uses the correct host
-    if (this.socket.io) {
-      this.socket.io.opts.transports = ['websocket'];
-      this.socket.io.opts.path = '/socket.io';
-      this.socket.io.opts.hostname = new URL(SOCKET_URL).hostname;
-      this.socket.io.opts.port = new URL(SOCKET_URL).port || (new URL(SOCKET_URL).protocol === 'https:' ? '443' : '80');
-      this.socket.io.opts.secure = new URL(SOCKET_URL).protocol === 'https:';
-    }
+      withCredentials: true,
+      // Explicitly set the host and port
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? '443' : '80'),
+      secure: url.protocol === 'https:',
+      // Disable polling to force WebSocket
+      upgrade: false
+    };
+    
+    console.log('Socket.IO options:', socketOptions);
+    
+    // Create the socket with explicit URL
+    this.socket = io(url.origin, socketOptions);
 
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
