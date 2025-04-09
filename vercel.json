@@ -6,7 +6,8 @@
       "use": "@vercel/static-build",
       "config": {
         "buildCommand": "npm run build",
-        "outputDirectory": "build"
+        "outputDirectory": "build",
+        "tsconfig": "tsconfig.build.json"
       }
     }
   ],
@@ -37,6 +38,6 @@
     }
   ],
   "env": {
-    "REACT_APP_WEBSOCKET_URL": "https://card-deck-simulator-production.up.railway.app"
+    "REACT_APP_WEBSOCKET_URL": "https://card-deck-simulator-server-production.up.railway.app"
   }
 } 
