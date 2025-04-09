@@ -5,8 +5,10 @@ import { Card } from '../types/Card';
 
 // Use environment variable for WebSocket URL in production
 const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? window.location.origin 
+  ? process.env.REACT_APP_WEBSOCKET_URL || window.location.origin
   : 'http://localhost:3001';
+
+console.log('WebSocket URL:', SOCKET_URL); // Debug log
 
 type MessageHandler = (data: any) => void;
 type ConnectionHandler = (count: number) => void;
