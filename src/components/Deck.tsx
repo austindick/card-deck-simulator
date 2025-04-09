@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { websocketService } from '../services/websocketService';
+import { socketService } from '../services/socketService';
 import { GameState } from '../types/gameState';
 
 export const Deck: React.FC = () => {
@@ -9,49 +9,49 @@ export const Deck: React.FC = () => {
 
   useEffect(() => {
     // Subscribe to state updates
-    const unsubscribeState = websocketService.subscribe('stateUpdate', (state: GameState) => {
+    const unsubscribeState = socketService.subscribe('stateUpdate', (state: GameState) => {
       console.log('Received state update:', state);
       setGameState(state);
     });
 
     // Subscribe to connection updates
-    const unsubscribeConnections = websocketService.subscribe('connectionUpdate', (data: { connections: number }) => {
+    const unsubscribeConnections = socketService.subscribe('connectionUpdate', (data: { connections: number }) => {
       console.log('Received connection update:', data);
       setConnectionCount(Math.max(1, data.connections));
     });
 
     // Subscribe to errors
-    const unsubscribeErrors = websocketService.subscribe('error', (error: { message: string }) => {
+    const unsubscribeErrors = socketService.subscribe('error', (error: { message: string }) => {
       console.error('Received error:', error);
       setError(error.message);
     });
 
-    // Connect to WebSocket server
-    websocketService.connect();
+    // Connect to Socket.io server
+    socketService.connect();
 
     // Cleanup subscriptions on unmount
     return () => {
       unsubscribeState();
       unsubscribeConnections();
       unsubscribeErrors();
-      websocketService.disconnect();
+      socketService.disconnect();
     };
   }, []);
 
   const handleDrawCard = () => {
-    websocketService.send('draw');
+    socketService.send('draw');
   };
 
   const handleShuffle = () => {
-    websocketService.send('shuffle');
+    socketService.send('shuffle');
   };
 
   const handlePeek = () => {
-    websocketService.send('peek');
+    socketService.send('peek');
   };
 
   const handleReset = () => {
-    websocketService.send('reset');
+    socketService.send('reset');
   };
 
   if (error) {
